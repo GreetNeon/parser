@@ -270,6 +270,7 @@ Token GetNextToken ()
 }
   Token t;
   t.tp = ERR;
+  strcpy(t.lx, "Error: Lexer not initialised or token list not ready");
   return t;
 }
 
@@ -319,32 +320,32 @@ int StopLexer ()
 
 // do not remove the next line
 #ifndef TEST
-int main()
-{
-	// implement your main function here
-  // NOTE: the autograder will not use your main function
-  if (InitLexer("Main.jack")){
-    printf("File opened successfully\n");
-  } else {
-    printf("File not opened successfully\n");
-  }
-  // for (int i = 0; i < 1000; i++){
-  //   if (t.tp == EOFile){
-  //     printf("\n!!End of file reached!!\n");
-  //     printf("Number of Tokens: %d\n", i);
-  //     break;
-  //   }
-  //   Token lst[2];
-  //   lst[0] = t;
-  //   GetNextToken();
-  //   lst[1] = t;
-  //   printf("\nToken: %s\n", t.lx);
-  //   printf("Token Type: %d\n", t.tp);
-  //   printf("Line Number: %d\n", t.ln);
-  //}
-  StoreTokens();
-  StopLexer();
-	return 0;
-}
+// int main()
+// {
+// 	// implement your main function here
+//   // NOTE: the autograder will not use your main function
+//   if (InitLexer("Main.jack")){
+//     printf("File opened successfully\n");
+//   } else {
+//     printf("File not opened successfully\n");
+//   }
+//   // for (int i = 0; i < 1000; i++){
+//   //   if (t.tp == EOFile){
+//   //     printf("\n!!End of file reached!!\n");
+//   //     printf("Number of Tokens: %d\n", i);
+//   //     break;
+//   //   }
+//   //   Token lst[2];
+//   //   lst[0] = t;
+//   //   GetNextToken();
+//   //   lst[1] = t;
+//   //   printf("\nToken: %s\n", t.lx);
+//   //   printf("Token Type: %d\n", t.tp);
+//   //   printf("Line Number: %d\n", t.ln);
+//   //}
+//   StoreTokens();
+//   StopLexer();
+// 	return 0;
+// }
 // do not remove the next line
 #endif
