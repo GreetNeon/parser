@@ -36,7 +36,7 @@ int InitParser (char* file_name); // initialise the parser to parse source code 
 ParserInfo Parse (); // parse the input file (the one passed to InitParser)
 int StopParser (); // stop the parser and do any necessary clean up
 char* ErrorString (SyntaxErrors e);
-void error (SyntaxErrors err); // print an error message and exit the program
+void error (SyntaxErrors err, Token t); // print an error message and exit the program
 void classDeclar(); // parse a class declaration
 void memberDeclar(); // parse a class member declaration
 void classVarDeclar(); // parse a class variable declaration
