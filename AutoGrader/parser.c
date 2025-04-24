@@ -15,18 +15,94 @@ void error (SyntaxErrors err){
 }
 
 void classDeclar(){
+	Token t = PeekNextToken();
+	if (strcmp(t.lx, "class") == 0){
+		GetNextToken(); // consume the token
+	} else {
+		error(classExpected);
+		return;
+	}
+	t = PeekNextToken();
+	if (t.tp != ID){
+		error(idExpected);
+		return;
+	}
+	GetNextToken(); // consume the token
+	t = PeekNextToken();
+	if (strcmp(t.lx, "{") != 0){
+		error(openBraceExpected);
+		return;
+	}
+	GetNextToken(); // consume the token
+	while (1){
+		t = PeekNextToken();
+		if (strcmp(t.lx, "}") == 0){
+			break;
+		}
+		if (t.tp == EOFile){
+			error(closeBraceExpected);
+			return;
+		}
+		memberDeclar();
+	}
 	return;
 }
 
 void memberDeclar(){
+	Token t = PeekNextToken();
+	if (strcmp(t.lx, "static") == 0 || strcmp(t.lx, "field") == 0){
+		classVarDeclar();// Process class variable declaration
+	} else if(strcmp(t.lx, "constructor") == 0 || strcmp(t.lx, "function") == 0 || strcmp(t.lx, "method") == 0){
+		subroutineDeclar();// Process subroutine declaration
+	} else {
+		error(memberDeclarErr);
+		return;
+	}
 	return;
 }
 
 void classVarDeclar(){
+	Token t = PeekNextToken();
+	if (strcmp(t.lx, "static") == 0 || strcmp(t.lx, "field") == 0){
+		GetNextToken(); // consume the token
+	} else {
+		error(memberDeclarErr);
+		return;
+	}
+	type();
+	while(1){
+		t = PeekNextToken();
+		if (t.tp != ID){
+			error(idExpected);
+			return;
+		}
+		GetNextToken(); // consume the token
+		t = PeekNextToken();
+		if (strcmp(t.lx, ",") == 0){
+			GetNextToken(); // consume the token
+		} else {
+			break;
+		}
+	}
+	t = PeekNextToken();
+	if (strcmp(t.lx, ";") != 0){
+		error(semicolonExpected);
+		return;
+	}
+	GetNextToken(); // consume the token
 	return;
 }
 
 void type(){
+	Token t = PeekNextToken();
+	if (strcmp(t.lx, "int") == 0 || strcmp(t.lx, "char") == 0 || strcmp(t.lx, "boolean") == 0){
+		GetNextToken(); // consume the token
+	} else if (t.tp == ID){
+		GetNextToken(); // consume the token
+	} else {
+		error(illegalType);
+		return;
+	}
 	return;
 }
 
@@ -566,9 +642,7 @@ ParserInfo Parse ()
 	ParserInfo pi;
 
 	// implement the function
-	InitLexer("Main.jack");
-	pi.er = idExpected;
-	pi.tk = GetNextToken();
+	pi.er = none;
 
 	return pi;
 }
