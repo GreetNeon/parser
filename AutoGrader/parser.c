@@ -89,6 +89,7 @@ void classVarDeclar(){
 	t = PeekNextToken();
 	if (strcmp(t.lx, ";") != 0){
 		error(semicolonExpected, t);
+		GetNextToken(); // consume the token
 		return;
 	}
 	GetNextToken(); // consume the token
@@ -216,7 +217,7 @@ void statement(){
 	} else if (strcmp(t.lx, "var") == 0){
 		printf("var statement\n");
 		varDeclarStatement();
-	} else {
+	} else if (pi.er == none){
 		printf("syntax error in statement\n");
 		error(syntaxError, t);
 	}
@@ -251,6 +252,7 @@ void varDeclarStatement(){
 		}
 		if (strcmp(t.lx, ";") != 0){
 			error(semicolonExpected, t);
+			GetNextToken(); // consume the token
 			return;
 		}
 		GetNextToken(); // consume the token
@@ -296,6 +298,7 @@ void letStatement(){
 		t = PeekNextToken();
 		if (strcmp(t.lx, ";") != 0){
 			error(semicolonExpected, t);
+			GetNextToken(); // consume the token
 			return;
 		}
 		GetNextToken(); // consume the token
@@ -424,6 +427,8 @@ void doStatement(){
 		t = PeekNextToken();
 		if (strcmp(t.lx, ";") != 0){
 			error(semicolonExpected, t);
+			GetNextToken(); // consume the token
+			return;
 		}
 		GetNextToken(); // consume the token
 		// Process do statement
@@ -503,6 +508,8 @@ void returnStatemnt(){
 			t = GetNextToken();
 			if (strcmp(t.lx, ";") != 0){
 				error(semicolonExpected, t);
+				GetNextToken(); // consume the token
+				return;
 			}
 			printf("token: %s", t.lx); // consume the token
 			// Process return statement with expression
@@ -703,7 +710,12 @@ ParserInfo Parse ()
 	// parse the input file (the one passed to InitParser)
 	// and return the ParserInfo struct
 	Token t = PeekNextToken();
+	Token temp, temp2 = PeekNextToken();
 	while (1){
+		printf("Parse current error %d\n", pi.er);
+		if (pi.er != none){
+			break;
+		}
 		t = PeekNextToken();
 		printf("%s\n", t.lx);
 		if (t.tp == EOFile){
@@ -719,12 +731,12 @@ ParserInfo Parse ()
 		else if (strcmp(t.lx, "static") == 0 || strcmp(t.lx, "field") == 0 || strcmp(t.lx, "constructor") == 0 || strcmp(t.lx, "function") == 0 || strcmp(t.lx, "method") == 0){
 			memberDeclar();
 		}
-		else{
+		else if (strcmp(t.lx, "var") == 0 || strcmp(t.lx, "let") == 0 || strcmp(t.lx, "if") == 0 || strcmp(t.lx, "while") == 0 || strcmp(t.lx, "do") == 0 || strcmp(t.lx, "return") == 0){
 			statement();
 			printf("Here\n");
 		}
-		printf("Parse current token %s\nError: %d", t.lx, pi.er);
-		if (pi.er != none){
+		else{
+			error(classExpected, t);
 			break;
 		}
 	}
