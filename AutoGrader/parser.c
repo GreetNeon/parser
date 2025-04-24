@@ -7,9 +7,11 @@
 
 
 // you can declare prototypes of parser functions below
-void error (char* msg){
-	fprintf(stderr, "Error: %s\n", msg);
-	exit(1);
+
+ParserInfo pi;
+
+void error (SyntaxErrors err){
+	pi.er = err;
 }
 
 void classDeclar(){
@@ -29,42 +31,336 @@ void type(){
 }
 
 void subroutineDeclar(){
+	Token t = PeekNextToken();
+	if (strcmp(t.lx, "constructor") == 0 || strcmp(t.lx, "function") == 0 || strcmp(t.lx, "method") == 0){
+		GetNextToken(); // consume the token
+	} else {
+		error(subroutineDeclarErr);
+		return;
+	}
+	t = PeekNextToken();
+	if (strcmp(t.lx, "void") == 0){
+		GetNextToken(); // consume the token
+	} else {
+		type();
+	}
+	t = PeekNextToken();
+	if (t.tp != ID){
+		error(idExpected);
+		return;
+	}
+	GetNextToken(); // consume the token
+	t = PeekNextToken();
+	if (strcmp(t.lx, "(") != 0){
+		error(openParenExpected);
+		return;
+	}
+	GetNextToken(); // consume the token
+	paramList();
+	t = PeekNextToken();
+	if (strcmp(t.lx, ")") != 0){
+		error(closeParenExpected);
+		return;
+	}
+	GetNextToken(); // consume the token
+	subroutineBody();
 	return;
 }
 
 void paramList(){
+	Token t = PeekNextToken();
+	if (strcmp(t.lx, ")") == 0){
+		// empty parameter list
+		return;
+	}
+	while(1){
+		type();
+		t = PeekNextToken();
+		if (t.tp != ID){
+			error(idExpected);
+			return;
+		}
+		GetNextToken(); // consume the token
+		t = PeekNextToken();
+		if (strcmp(t.lx, ",") == 0){
+			GetNextToken(); // consume the token
+		} else {
+			break;
+		}
+	}
 	return;
 }
 
 void subroutineBody(){
+	Token t = PeekNextToken();
+	if (strcmp(t.lx, "{") == 0){
+		GetNextToken(); // consume the token
+		while (1){
+			t = PeekNextToken();
+			if (strcmp(t.lx, "}") == 0){
+				break;
+			}
+			if (t.tp == EOFile){
+				error(closeBraceExpected);
+				return;
+			}
+			statement();
+		}
+		GetNextToken(); // consume the token
+	} else {
+		error(openBraceExpected);
+	}
 	return;
 }
 
 void statement(){
+	Token t = PeekNextToken();
+	if (strcmp(t.lx, "let") == 0){
+		letStatement();
+	} else if (strcmp(t.lx, "if") == 0){
+		ifStatement();
+	} else if (strcmp(t.lx, "while") == 0){
+		whileStatement();
+	} else if (strcmp(t.lx, "do") == 0){
+		doStatement();
+	} else if (strcmp(t.lx, "return") == 0){
+		returnStatemnt();
+	} else if (strcmp(t.lx, "var") == 0){
+		varDeclarStatement();
+	} else {
+		error(syntaxError);
+	}
 	return;
 }
 
 void varDeclarStatement(){
+	Token t = PeekNextToken();
+	if (strcmp(t.lx, "var") == 0){
+		GetNextToken(); // consume the token
+		type();
+		t = PeekNextToken();
+		if (t.tp != ID){
+			error(idExpected);
+			return;
+		}
+		GetNextToken(); // consume the token
+		while (1){
+			t = PeekNextToken();
+			if (strcmp(t.lx, ",") == 0){
+				GetNextToken(); // consume the token
+				t = PeekNextToken();
+				if (t.tp != ID){
+					error(idExpected);
+					return;
+				}
+				GetNextToken(); // consume the token
+			} else {
+				break;
+			}
+		}
+		if (strcmp(t.lx, ";") != 0){
+			error(semicolonExpected);
+			return;
+		}
+		GetNextToken(); // consume the token
+	} else {
+		error(syntaxError);
+	}
 	return;
 }
 
 void letStatement(){
+	Token t = PeekNextToken();
+	if (strcmp(t.lx, "let") == 0){
+		GetNextToken(); // consume the token
+		t = PeekNextToken();
+		if (t.tp != ID){
+			error(idExpected);
+			return;
+		}
+		GetNextToken(); // consume the token
+		t = PeekNextToken();
+		if (strcmp(t.lx, "[") == 0){
+			GetNextToken(); // consume the token
+			expression();
+			t = PeekNextToken();
+			if (strcmp(t.lx, "]") != 0){
+				error(closeBracketExpected);
+				return;
+			}
+			GetNextToken(); // consume the token
+			t = PeekNextToken();
+		}
+		if (strcmp(t.lx, "=") != 0){
+			error(equalExpected);
+			return;
+		}
+		GetNextToken(); // consume the token
+		expression();
+		t = PeekNextToken();
+		if (strcmp(t.lx, ";") != 0){
+			error(semicolonExpected);
+			return;
+		}
+		GetNextToken(); // consume the token
+	} else {
+		error(syntaxError);
+	} 
 	return;
 }
 
 void ifStatement(){
+	Token t = PeekNextToken();
+	if (strcmp(t.lx, "if") == 0){
+		GetNextToken(); // consume the token
+		t = PeekNextToken();
+		if (strcmp(t.lx, "(") != 0){
+			error(openParenExpected);
+			return;
+		}
+		GetNextToken(); // consume the token
+		expression();
+		t = PeekNextToken();
+		if (strcmp(t.lx, ")") != 0){
+			error(closeParenExpected);
+			return;
+		}
+		GetNextToken(); // consume the token
+		t = PeekNextToken();
+		if (strcmp(t.lx, "{") != 0){
+			error(openBraceExpected);
+			return;
+		}
+		GetNextToken(); // consume the token
+		while (1){
+			t = PeekNextToken();
+			if (strcmp(t.lx, "}") == 0){
+				break;
+			}
+			if (t.tp == EOFile){
+				error(closeBraceExpected);
+				return;
+			}
+			statement();
+		}
+		t = PeekNextToken();
+		if (strcmp(t.lx, "else") == 0){
+			GetNextToken(); // consume the token
+			t = PeekNextToken();
+			if (strcmp(t.lx, "{") != 0){
+				error(openBraceExpected);
+				return;
+			}
+			GetNextToken(); // consume the token
+			while (1){
+				t = PeekNextToken();
+				if (strcmp(t.lx, "}") == 0){
+					break;
+				}
+				if (t.tp == EOFile){
+					error(closeBraceExpected);
+					return;
+				}
+				statement();
+			}
+		}
+	} else {
+		error(syntaxError);
+	}
 	return;
 }
 
 void whileStatement(){
+	Token t = PeekNextToken();
+	if (strcmp(t.lx, "while") == 0){
+		GetNextToken(); // consume the token
+		t = PeekNextToken();
+		if (strcmp(t.lx, "(") != 0){
+			error(openParenExpected);
+			return;
+		}
+		GetNextToken(); // consume the token
+		expression();
+		t = PeekNextToken();
+		if (strcmp(t.lx, ")") != 0){
+			error(closeParenExpected);
+			return;
+		}
+		GetNextToken(); // consume the token
+		t = PeekNextToken();
+		if (strcmp(t.lx, "{") != 0){
+			error(openBraceExpected);
+			return;
+		}
+		GetNextToken(); // consume the token
+		t = PeekNextToken();
+		while (strcmp(t.lx, "}") != 0){
+			if (t.tp == EOFile){
+				error(closeBraceExpected);
+				return;
+			}
+			subroutineBody();
+			t = PeekNextToken();
+			
+		}
+		GetNextToken(); // consume the token
+		// Process while statement
+	} else {
+		error(syntaxError);
+	}
 	return;
 }
 
 void doStatement(){
+	Token t = PeekNextToken();
+	if (strcmp(t.lx, "do") == 0){
+		GetNextToken(); // consume the token
+		subroutineCall();
+		t = PeekNextToken();
+		if (strcmp(t.lx, ";") != 0){
+			error(semicolonExpected);
+		}
+		GetNextToken(); // consume the token
+		// Process do statement
+	} else {
+		error(syntaxError);
+	}
 	return;
 }
 
 void subroutineCall(){
+	Token t = PeekNextToken();
+	if (t.tp == ID){
+		GetNextToken(); // consume the token
+		t = PeekNextToken();
+		if (strcmp(t.lx, "(") == 0){
+			GetNextToken(); // consume the token
+			expressionList();
+			t = GetNextToken();
+			if (strcmp(t.lx, ")") != 0){
+				error(closeParenExpected);
+			}
+		} else if (strcmp(t.lx, ".") == 0){
+			GetNextToken(); // consume the token
+			t = GetNextToken(); // get the next token
+			if (t.tp != ID){
+				error(idExpected);
+				return;
+			}
+			t = PeekNextToken();
+			if (strcmp(t.lx, "(") == 0){
+				GetNextToken(); // consume the token
+				expressionList();
+				t = GetNextToken();
+				if (strcmp(t.lx, ")") != 0){
+					error(closeParenExpected);
+				}
+			}
+		}
+	} else {
+		error(idExpected);
+	}
+
 	return;
 }
 
@@ -100,12 +396,12 @@ void returnStatemnt(){
 			expression();
 			t = GetNextToken();
 			if (strcmp(t.lx, ";") != 0){
-				error("Semicolon expected");
+				error(semicolonExpected);
 			}
 			// Process return statement with expression
 		}
 	} else {
-		error("Return statement expected");
+		error(syntaxError);
 	}
 	return;
 }
@@ -182,7 +478,7 @@ void factor(){
 		// Process operand
 		Operand();
 	} else {
-		error("Factor expected");
+		error(syntaxError);
 	}
 	return;
 }
@@ -206,7 +502,7 @@ void Operand(){
 				expression();
 				t = GetNextToken();
 				if (strcmp(t.lx, "]") != 0){
-					error("Close bracket expected");
+					error(closeBracketExpected);
 				}
 			// Check for function call
 			} else if (strcmp(t.lx, "(") == 0){
@@ -214,14 +510,14 @@ void Operand(){
 				expressionList();
 				t = GetNextToken();
 				if (strcmp(t.lx, ")") != 0){
-					error("Close bracket expected");
+					error(closeBracketExpected);
 				}
 			// Check for dot operator (method call)
 			} else if (strcmp(t.lx, ".") == 0){
 				GetNextToken(); // consume the token
 				t = GetNextToken(); // get the next token
 				if (t.tp != ID){
-					error("Identifier expected after '.'");
+					error(idExpected);
 				}
 			}
 		}
@@ -235,7 +531,7 @@ void Operand(){
 			expression();
 			t = GetNextToken();
 			if (strcmp(t.lx, ")") != 0){
-				error("Close bracket expected");
+				error(closeParenExpected);
 			}
 			return;
 		}
@@ -254,7 +550,7 @@ void Operand(){
 		}
 	}
 	else {
-		error("Operand expected");
+		error(syntaxError);
 	}
 }
 
@@ -270,9 +566,10 @@ ParserInfo Parse ()
 	ParserInfo pi;
 
 	// implement the function
+	InitLexer("Main.jack");
+	pi.er = idExpected;
+	pi.tk = GetNextToken();
 
-
-	pi.er = none;
 	return pi;
 }
 
