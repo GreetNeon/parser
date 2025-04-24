@@ -37,6 +37,7 @@ void classDeclar(){
 	GetNextToken(); // consume the token
 	while (1){
 		t = PeekNextToken();
+		//printf("classDeclar current token: %s\n", t.lx);
 		if (strcmp(t.lx, "}") == 0){
 			GetNextToken(); // consume the token
 			break;
@@ -60,6 +61,7 @@ void memberDeclar(){
 		error(memberDeclarErr, t);
 		return;
 	}
+	printf("memberDeclar returns\n");
 	return;
 }
 
@@ -74,6 +76,7 @@ void classVarDeclar(){
 	type();
 	while(1){
 		t = PeekNextToken();
+		printf("classVarDeclar current token: %s\n", t.lx);
 		if (t.tp != ID){
 			error(idExpected, t);
 			return;
@@ -143,6 +146,7 @@ void subroutineDeclar(){
 	}
 	GetNextToken(); // consume the token
 	subroutineBody();
+	printf("subroutineDeclar returns\n");
 	return;
 }
 
@@ -175,11 +179,10 @@ void subroutineBody(){
 	int i = 0;
 	if (strcmp(t.lx, "{") == 0){
 		GetNextToken(); // consume the token
-		while (i < 30){
-			printf("subroutineBody current token %s\n", t.lx);
+		while (i < 10){
 			t = PeekNextToken();
+			printf("subroutineBody current token %s\n", t.lx);
 			if (strcmp(t.lx, "}") == 0){
-				GetNextToken(); // consume the token
 				break;
 			}
 			if (t.tp == EOFile){
@@ -193,6 +196,7 @@ void subroutineBody(){
 	} else {
 		error(openBraceExpected, t);
 	}
+	printf("subroutineBody returns\nToken: %s\n", PeekNextToken().lx);
 	return;
 }
 
@@ -305,6 +309,7 @@ void letStatement(){
 	} else {
 		error(syntaxError, t);
 	} 
+	printf("letStatement returns\nNext token: %s\n", PeekNextToken().lx);
 	return;
 }
 
@@ -425,16 +430,18 @@ void doStatement(){
 		GetNextToken(); // consume the token
 		subroutineCall();
 		t = PeekNextToken();
+		printf("do statement current token %s\n", t.lx);
 		if (strcmp(t.lx, ";") != 0){
 			error(semicolonExpected, t);
-			GetNextToken(); // consume the token
 			return;
 		}
 		GetNextToken(); // consume the token
 		// Process do statement
 	} else {
 		error(syntaxError, t);
+		printf("do statement error\n");
 	}
+	printf("do statement returns\nNext Token: %s\n", PeekNextToken().lx);
 	return;
 }
 
@@ -450,6 +457,7 @@ void subroutineCall(){
 			if (strcmp(t.lx, ")") != 0){
 				error(closeParenExpected, t);
 			}
+			return;
 		} else if (strcmp(t.lx, ".") == 0){
 			GetNextToken(); // consume the token
 			t = GetNextToken(); // get the next token
@@ -462,9 +470,16 @@ void subroutineCall(){
 				GetNextToken(); // consume the token
 				expressionList();
 				t = GetNextToken();
+				printf("subroutineCall current token %s\n", t.lx);
 				if (strcmp(t.lx, ")") != 0){
 					error(closeParenExpected, t);
 				}
+				printf("subroutineCall returns\nNext token %s\n", PeekNextToken().lx);
+				return;
+			}
+			else{
+				error(openBraceExpected, t);
+				return;
 			}
 		}
 	} else {
@@ -586,12 +601,12 @@ void term(){
 
 void factor(){
 	Token t = PeekNextToken();
-	printf("factor current token %s\n", t.lx);
+	printf("factor current token: %s\n", t.lx);
 	if (strcpy(t.lx, "-") == 0 || strcmp(t.lx, "~") == 0){
 		GetNextToken(); // consume the token
 		// Process unary operator
 		Operand();
-	} else if (t.tp == INT || t.tp == ID || t.tp == STRING || t.tp == SYMBOL){
+	} else if (t.tp == INT || t.tp == ID || t.tp == STRING || t.tp == SYMBOL || t.tp == RESWORD){
 		// Process operand
 		Operand();
 	} else {
@@ -684,6 +699,7 @@ void Operand(){
 	// true | false | null | this
 	else if (t.tp == RESWORD){
 		if (strcmp(t.lx, "true") == 0 || strcmp(t.lx, "false") == 0 || strcmp(t.lx, "null") == 0 || strcmp(t.lx, "this") == 0){
+			printf("true | false | null | this\n");
 			GetNextToken(); // consume the token
 			// process boolean or null or this
 			return;
