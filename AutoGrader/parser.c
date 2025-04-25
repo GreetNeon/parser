@@ -9,10 +9,15 @@
 // you can declare prototypes of parser functions below
 
 ParserInfo pi;
+int ErrorFlag = 1;
 
 void error (SyntaxErrors err, Token t){
+	if (ErrorFlag == 0){
+		return;
+	}
 	pi.er = err;
 	pi.tk = t;
+	ErrorFlag = 0;
 }
 
 void classDeclar(){
@@ -36,8 +41,11 @@ void classDeclar(){
 	}
 	GetNextToken(); // consume the token
 	while (1){
+		if (ErrorFlag == 0){
+			break;
+		}
 		t = PeekNextToken();
-		//printf("classDeclar current token: %s\n", t.lx);
+		////printf("classDeclar current token: %s\n", t.lx);
 		if (strcmp(t.lx, "}") == 0){
 			GetNextToken(); // consume the token
 			break;
@@ -61,7 +69,7 @@ void memberDeclar(){
 		error(memberDeclarErr, t);
 		return;
 	}
-	printf("memberDeclar returns\n");
+	//printf("memberDeclar returns\n");
 	return;
 }
 
@@ -75,8 +83,11 @@ void classVarDeclar(){
 	}
 	type();
 	while(1){
+		if (ErrorFlag == 0){
+			break;
+		}
 		t = PeekNextToken();
-		printf("classVarDeclar current token: %s\n", t.lx);
+		//printf("classVarDeclar current token: %s\n", t.lx);
 		if (t.tp != ID){
 			error(idExpected, t);
 			return;
@@ -146,7 +157,7 @@ void subroutineDeclar(){
 	}
 	GetNextToken(); // consume the token
 	subroutineBody();
-	printf("subroutineDeclar returns\n");
+	//printf("subroutineDeclar returns\nToken: %s\n", PeekNextToken().lx);
 	return;
 }
 
@@ -156,7 +167,14 @@ void paramList(){
 		// empty parameter list
 		return;
 	}
+	else if (strcmp(t.lx, "{") == 0){
+		error(closeParenExpected, t);
+		return;
+	}
 	while(1){
+		if (ErrorFlag == 0){
+			break;
+		}
 		type();
 		t = PeekNextToken();
 		if (t.tp != ID){
@@ -179,10 +197,14 @@ void subroutineBody(){
 	int i = 0;
 	if (strcmp(t.lx, "{") == 0){
 		GetNextToken(); // consume the token
-		while (i < 10){
+		while (i < 30){
+			if (ErrorFlag == 0){
+				break;
+			}
 			t = PeekNextToken();
-			printf("subroutineBody current token %s\n", t.lx);
+			//printf("subroutineBody current token %s\n", t.lx);
 			if (strcmp(t.lx, "}") == 0){
+				GetNextToken(); // consume the token
 				break;
 			}
 			if (t.tp == EOFile){
@@ -192,40 +214,39 @@ void subroutineBody(){
 			statement();
 			i++;
 		}
-		GetNextToken(); // consume the token
 	} else {
 		error(openBraceExpected, t);
 	}
-	printf("subroutineBody returns\nToken: %s\n", PeekNextToken().lx);
+	//printf("subroutineBody returns\nToken: %s\n", PeekNextToken().lx);
 	return;
 }
 
 void statement(){
 	Token t = PeekNextToken();
-	printf("statement current token %s\n", t.lx);
+	//printf("statement current token %s\n", t.lx);
 	if (strcmp(t.lx, "let") == 0){
-		printf("let statement\n");
+		//printf("let statement\n");
 		letStatement();
 	} else if (strcmp(t.lx, "if") == 0){
-		printf("if statement\n");
+		//printf("if statement\n");
 		ifStatement();
 	} else if (strcmp(t.lx, "while") == 0){
-		printf("while statement\n");
+		//printf("while statement\n");
 		whileStatement();
 	} else if (strcmp(t.lx, "do") == 0){
-		printf("do statement\n");
+		//printf("do statement\n");
 		doStatement();
 	} else if (strcmp(t.lx, "return") == 0){
-		printf("return statement\n");
+		//printf("return statement\n");
 		returnStatemnt();
 	} else if (strcmp(t.lx, "var") == 0){
-		printf("var statement\n");
+		//printf("var statement\n");
 		varDeclarStatement();
 	} else if (pi.er == none){
-		printf("syntax error in statement\n");
+		//printf("syntax error in statement\n");
 		error(syntaxError, t);
 	}
-	printf("statement returns\n");
+	//printf("statement returns\n");
 	return;
 }
 
@@ -241,6 +262,9 @@ void varDeclarStatement(){
 		}
 		GetNextToken(); // consume the token
 		while (1){
+			if (ErrorFlag == 0){
+				break;
+			}
 			t = PeekNextToken();
 			if (strcmp(t.lx, ",") == 0){
 				GetNextToken(); // consume the token
@@ -268,11 +292,11 @@ void varDeclarStatement(){
 
 void letStatement(){
 	Token t = PeekNextToken();
-	printf("letStatement current token %s\n", t.lx);
+	//printf("letStatement current token %s\n", t.lx);
 	if (strcmp(t.lx, "let") == 0){
 		GetNextToken(); // consume the token
 		t = PeekNextToken();
-		printf("current token %s\n", t.lx);
+		//printf("current token %s\n", t.lx);
 		if (t.tp != ID){
 			error(idExpected, t);
 			return;
@@ -291,13 +315,19 @@ void letStatement(){
 			t = PeekNextToken();
 		}
 		if (strcmp(t.lx, "=") != 0){
-			printf("current token not equal %s\n", t.lx);
+			//printf("current token not equal %s\n", t.lx);
 
 			error(equalExpected, t);
 			return;
 		}
 		GetNextToken(); // consume the token
-		printf("preexpression token %s\n", t.lx);
+		//printf("preexpression token %s\n", t.lx);
+		t = PeekNextToken();
+		if(strcmp(t.lx, ";") == 0){
+			// Expression Missing
+			error(syntaxError, t);
+			return;
+		}
 		expression();
 		t = PeekNextToken();
 		if (strcmp(t.lx, ";") != 0){
@@ -309,7 +339,7 @@ void letStatement(){
 	} else {
 		error(syntaxError, t);
 	} 
-	printf("letStatement returns\nNext token: %s\n", PeekNextToken().lx);
+	//printf("letStatement returns\nNext token: %s\n", PeekNextToken().lx);
 	return;
 }
 
@@ -337,6 +367,9 @@ void ifStatement(){
 		}
 		GetNextToken(); // consume the token
 		while (1){
+			if (ErrorFlag == 0){
+				break;
+			}
 			t = PeekNextToken();
 			if (strcmp(t.lx, "}") == 0){
 				GetNextToken(); // consume the token
@@ -346,7 +379,7 @@ void ifStatement(){
 				error(closeBraceExpected, t);
 				return;
 			}
-			printf("if statement current token %s\n", t.lx);
+			//printf("if statement current token %s\n", t.lx);
 			statement();
 		}
 		t = PeekNextToken();
@@ -359,6 +392,9 @@ void ifStatement(){
 			}
 			GetNextToken(); // consume the token
 			while (1){
+				if (ErrorFlag == 0){
+					break;
+				}
 				t = PeekNextToken();
 				if (strcmp(t.lx, "}") == 0){
 					GetNextToken(); // consume the token
@@ -381,7 +417,7 @@ void whileStatement(){
 	Token t = PeekNextToken();
 	int i = 0;
 	if (strcmp(t.lx, "while") == 0){
-		printf("while statement\n");
+		//printf("In while statement\n");
 		GetNextToken(); // consume the token
 		t = PeekNextToken();
 		if (strcmp(t.lx, "(") != 0){
@@ -397,7 +433,7 @@ void whileStatement(){
 		}
 		GetNextToken(); // consume the token
 		t = PeekNextToken();
-		printf("while statement current token %s\n", t.lx);
+		//printf("while statement current token %s\n", t.lx);
 		if (strcmp(t.lx, "{") != 0){
 			error(openBraceExpected, t);
 			return;
@@ -405,14 +441,17 @@ void whileStatement(){
 		GetNextToken(); // consume the token
 		t = PeekNextToken();
 		while (strcmp(t.lx, "}" ) != 0 && i < 10){
-			printf("while loop current token %s\n", t.lx);
-			printf("%d\n", i);
+			if (ErrorFlag == 0){
+				break;
+			}
+			//printf("while loop current token %s\n", t.lx);
+			//printf("%d\n", i);
 			if (t.tp == EOFile){
 				error(closeBraceExpected, t);
 				return;
 			}
 			statement();
-			printf("while loop current token %s\n", t.lx);
+			//printf("while loop current token %s\n", t.lx);
 			t = PeekNextToken();
 			i++;
 		}
@@ -430,7 +469,7 @@ void doStatement(){
 		GetNextToken(); // consume the token
 		subroutineCall();
 		t = PeekNextToken();
-		printf("do statement current token %s\n", t.lx);
+		//printf("do statement current token %s\n", t.lx);
 		if (strcmp(t.lx, ";") != 0){
 			error(semicolonExpected, t);
 			return;
@@ -439,9 +478,9 @@ void doStatement(){
 		// Process do statement
 	} else {
 		error(syntaxError, t);
-		printf("do statement error\n");
+		//printf("do statement error\n");
 	}
-	printf("do statement returns\nNext Token: %s\n", PeekNextToken().lx);
+	//printf("do statement returns\nNext Token: %s\n", PeekNextToken().lx);
 	return;
 }
 
@@ -470,15 +509,15 @@ void subroutineCall(){
 				GetNextToken(); // consume the token
 				expressionList();
 				t = GetNextToken();
-				printf("subroutineCall current token %s\n", t.lx);
+				//printf("subroutineCall current token %s\n", t.lx);
 				if (strcmp(t.lx, ")") != 0){
 					error(closeParenExpected, t);
 				}
-				printf("subroutineCall returns\nNext token %s\n", PeekNextToken().lx);
+				//printf("subroutineCall returns\nNext token %s\n", PeekNextToken().lx);
 				return;
 			}
 			else{
-				error(openBraceExpected, t);
+				error(openParenExpected, t);
 				return;
 			}
 		}
@@ -497,6 +536,9 @@ void expressionList(){
 	else {
 		expression();
 		while (1){
+			if (ErrorFlag == 0){
+				break;
+			}
 			t = PeekNextToken();
 			if (strcmp(t.lx, ",") == 0){
 				GetNextToken(); // consume the token
@@ -511,13 +553,20 @@ void expressionList(){
 
 void returnStatemnt(){
 	Token t = PeekNextToken();
-	printf("returnStatemnt current token %s\n", t.lx);
+	//printf("returnStatemnt current token %s\n", t.lx);
 	if (strcmp(t.lx, "return") == 0){
 		GetNextToken(); // consume the token
 		t = PeekNextToken();
 		if (strcmp(t.lx, ";") == 0){
 			GetNextToken(); // consume the token
 			// Proces return statement with no expression
+		} else if(strcmp(t.lx, "}") == 0){
+			// Process return statement with no expression
+			error(semicolonExpected, t);
+			return;
+		} else if (t.tp == EOFile){
+			error(semicolonExpected, t);
+			return;
 		} else {
 			expression();
 			t = GetNextToken();
@@ -526,7 +575,7 @@ void returnStatemnt(){
 				GetNextToken(); // consume the token
 				return;
 			}
-			printf("token: %s", t.lx); // consume the token
+			//printf("token: %s", t.lx); // consume the token
 			// Process return statement with expression
 		}
 	} else {
@@ -538,8 +587,11 @@ void returnStatemnt(){
 void expression(){
 	relationalExpression();
 	while (1){
+		if (ErrorFlag == 0){
+			break;
+		}
 		Token t = PeekNextToken();
-		printf("expression current token %s\n", t.lx);
+		//printf("expression current token %s\n", t.lx);
 		if (strcmp(t.lx, "&") == 0 || strcmp(t.lx, "|") == 0){
 			GetNextToken(); // consume the token
 			relationalExpression();
@@ -555,8 +607,11 @@ void relationalExpression(){
 	ArithmeticExpression();
 
 	while (1){
+		if (ErrorFlag == 0){
+			break;
+		}
 		Token t = PeekNextToken();
-		printf("relationalExpression current token %s\n", t.lx);
+		//printf("relationalExpression current token %s\n", t.lx);
 		if (strcmp(t.lx, "<") == 0 || strcmp(t.lx, ">") == 0 || strcmp(t.lx, "=") == 0){
 			GetNextToken(); // consume the token
 			ArithmeticExpression();
@@ -570,8 +625,12 @@ void relationalExpression(){
 }
 
 void ArithmeticExpression(){
+	//printf("ArithmeticExpression Next Token: %s\n", PeekNextToken().lx);
 	term();
 	while (1){
+		if (ErrorFlag == 0){
+			break;
+		}
 		Token t = PeekNextToken();
 		if (strcmp(t.lx, "+") == 0 || strcmp(t.lx, "-") == 0){
 			GetNextToken(); // consume the token
@@ -587,6 +646,9 @@ void ArithmeticExpression(){
 void term(){
 	factor();
 	while (1){
+		if (ErrorFlag == 0){
+			break;
+		}
 		Token t = PeekNextToken();
 		if (strcmp(t.lx, "*") == 0 || strcmp(t.lx, "/") == 0){
 			GetNextToken(); // consume the token
@@ -601,9 +663,10 @@ void term(){
 
 void factor(){
 	Token t = PeekNextToken();
-	printf("factor current token: %s\n", t.lx);
-	if (strcpy(t.lx, "-") == 0 || strcmp(t.lx, "~") == 0){
+	//printf("factor current token: %s\n", t.lx);
+	if (strcmp(t.lx, "-") == 0 || strcmp(t.lx, "~") == 0){
 		GetNextToken(); // consume the token
+		//printf("factor unary operator %s\n", t.lx);
 		// Process unary operator
 		Operand();
 	} else if (t.tp == INT || t.tp == ID || t.tp == STRING || t.tp == SYMBOL || t.tp == RESWORD){
@@ -617,7 +680,7 @@ void factor(){
 
 void Operand(){
 	Token t = PeekNextToken();
-	printf("Operand current token %s\n", t.lx);
+	//printf("Operand current token %s\n", t.lx);
 	// integerConstant
 	if (t.tp == INT){
 		GetNextToken(); // consume the token
@@ -626,13 +689,16 @@ void Operand(){
 	// identifier [.identifier] [ [expression] | (expressionList) ]
 	} else if (t.tp == ID){
 		GetNextToken(); // consume the token
+		//printf("Operand identifier %s\n", t.lx);
 		// Can be a variable or a function call or indexing
 		t = PeekNextToken();
 		if (t.tp == SYMBOL){
+			//printf("Operand Id then symbol %s\n", t.lx);
 			// Check for indexing
 			if (strcmp(t.lx, "[") == 0){
 				GetNextToken(); // consume the token
 				expression();
+				//printf("Operand Id then symbol expression returns %s\n", PeekNextToken().lx);
 				t = GetNextToken();
 				if (strcmp(t.lx, "]") != 0){
 					error(closeBracketExpected, t);
@@ -677,6 +743,7 @@ void Operand(){
 			}
 		}
 		// process variable
+		//printf("Operand returns CT: %s\n", t.lx);
 		return;
 	// (expression)
 	} else if (t.tp == SYMBOL){
@@ -699,7 +766,7 @@ void Operand(){
 	// true | false | null | this
 	else if (t.tp == RESWORD){
 		if (strcmp(t.lx, "true") == 0 || strcmp(t.lx, "false") == 0 || strcmp(t.lx, "null") == 0 || strcmp(t.lx, "this") == 0){
-			printf("true | false | null | this\n");
+			//printf("true | false | null | this\n");
 			GetNextToken(); // consume the token
 			// process boolean or null or this
 			return;
@@ -726,14 +793,21 @@ ParserInfo Parse ()
 	// parse the input file (the one passed to InitParser)
 	// and return the ParserInfo struct
 	Token t = PeekNextToken();
-	Token temp, temp2 = PeekNextToken();
+	//printf("Parse current token %s\n", t.lx);
+	if (t.tp == ERR || t.tp == EOFile){
+		error(lexerErr, t);
+		return pi;
+	}
 	while (1){
-		printf("Parse current error %d\n", pi.er);
+		if (ErrorFlag == 0){
+			break;
+		}
+		//printf("Parse current error %d\n", pi.er);
 		if (pi.er != none){
 			break;
 		}
 		t = PeekNextToken();
-		printf("%s\n", t.lx);
+		//printf("%s\n", t.lx);
 		if (t.tp == EOFile){
 			break;
 		}
@@ -749,14 +823,14 @@ ParserInfo Parse ()
 		}
 		else if (strcmp(t.lx, "var") == 0 || strcmp(t.lx, "let") == 0 || strcmp(t.lx, "if") == 0 || strcmp(t.lx, "while") == 0 || strcmp(t.lx, "do") == 0 || strcmp(t.lx, "return") == 0){
 			statement();
-			printf("Here\n");
+			//printf("Here\n");
 		}
 		else{
 			error(classExpected, t);
 			break;
 		}
 	}
-	printf("Parse returns\n Current token %s\n", t.lx);
+	//printf("Parse returns\n Current token %s\n", t.lx);
 	return pi;
 }
 
@@ -765,7 +839,8 @@ int StopParser ()
 {
 	StopLexer();
 	pi.er = none;
-	pi.tk.tp = ERR;
+	pi.tk = (Token){ERR, "", 0, 0, ""};
+	ErrorFlag = 1;
 	return 1;
 }
 
